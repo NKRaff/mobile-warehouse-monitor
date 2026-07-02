@@ -45,7 +45,7 @@ export default function NotificacoesScreen() {
       const listaRecebida: Notificacao[] = response.data.notificoes;
       
       // Agora o .filter é totalmente seguro, pois listaRecebida sempre será um Array
-      const alertasAtivos = listaRecebida;
+      const alertasAtivos = listaRecebida.filter(n => !n.lida);
       
       // Ordena colocando os "críticos" primeiro
       alertasAtivos.sort((a, b) => (a.nivel === 'critico' ? -1 : 1));
