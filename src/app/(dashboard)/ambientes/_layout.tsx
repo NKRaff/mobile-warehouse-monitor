@@ -17,6 +17,14 @@ export default function AmbientesLayout() {
           headerBackTitle: 'Voltar' 
         }} 
       />
+
+      <Stack.Screen 
+        name="[id]"
+        options={{ 
+          title: '',
+          headerBackTitle: 'Voltar' 
+        }} 
+      />
     </Stack>
   );
 }

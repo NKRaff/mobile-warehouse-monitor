@@ -1,3 +1,6 @@
+import { api } from '@/src/service/api';
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -9,14 +12,10 @@ import {
   View
 } from 'react-native';
 
-// Ajuste no caminho do import da API que agora está em src/
-import { api } from '@/src/service/api';
-import { useRouter } from 'expo-router';
-
 interface Ambiente {
   id: string;
   nome: string;
-  tipo: string;
+  tipo: 'frio' | 'arejado' | string;
   descricao: string;
 }
 
@@ -25,7 +24,7 @@ export default function AmbienteScreen() {
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
 
-  const router = useRouter()
+  const router = useRouter();
 
   const fetchAmbientes = async () => {
     try {
@@ -49,17 +48,40 @@ export default function AmbienteScreen() {
     fetchAmbientes();
   };
 
-  const renderAmbienteCard = ({ item }: { item: Ambiente }) => (
-    <TouchableOpacity style={styles.card}>
-      <View style={styles.cardHeader}>
-        <Text style={styles.cardTitle}>{item.nome}</Text>
-        <View style={styles.badge}>
-          <Text style={styles.badgeText}>{item.tipo.toUpperCase()}</Text>
+  const renderAmbienteCard = ({ item }: { item: Ambiente }) => {
+    const isFrio = item.tipo.toLowerCase() === 'frio';
+
+    return (
+      <TouchableOpacity 
+        style={styles.card}
+        // Navega para a tela de detalhes passando o ID na URL e metadados por query params
+        onPress={() => router.push({
+          pathname: `/(dashboard)/ambientes/[id]`,
+          params: { id: item.id, nome: item.nome, tipo: item.tipo }
+        })}
+      >
+        <View style={styles.cardHeader}>
+          <View style={styles.titleContainer}>
+            {/* Resumo Visual por Ícones */}
+            <Ionicons 
+              name={isFrio ? "snow" : "thermometer"} 
+              size={20} 
+              color={isFrio ? "#007BFF" : "#FD7E14"} 
+              style={styles.typeIcon}
+            />
+            <Text style={styles.cardTitle}>{item.nome}</Text>
+          </View>
+          
+          <View style={[styles.badge, isFrio ? styles.badgeFrio : styles.badgeArejado]}>
+            <Text style={[styles.badgeText, isFrio ? styles.textFrio : styles.textArejado]}>
+              {item.tipo.toUpperCase()}
+            </Text>
+          </View>
         </View>
-      </View>
-      <Text style={styles.cardDescription}>{item.descricao}</Text>
-    </TouchableOpacity>
-  );
+        <Text style={styles.cardDescription} numberOfLines={2}>{item.descricao}</Text>
+      </TouchableOpacity>
+    );
+  };
 
   if (loading && !refreshing) {
     return (
@@ -87,10 +109,10 @@ export default function AmbienteScreen() {
         }
       />
       <TouchableOpacity 
-          style={styles.fab} 
-          onPress={() => router.push('/ambientes/cadastro')} // Caminho baseado nas pastas
-        >
-          <Text style={styles.fabText}>+</Text>
+        style={styles.fab} 
+        onPress={() => router.push('/ambientes/cadastro')}
+      >
+        <Text style={styles.fabText}>+</Text>
       </TouchableOpacity>
     </View>
   );
@@ -102,24 +124,19 @@ const styles = StyleSheet.create({
   listContent: { paddingHorizontal: 16, paddingBottom: 24 },
   card: { backgroundColor: '#FFFFFF', borderRadius: 12, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: '#E9ECEF', elevation: 2 },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
-  cardTitle: { fontSize: 18, fontWeight: '600', color: '#343A40', flex: 1, marginRight: 8 },
-  badge: { backgroundColor: '#E7F5FF', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
-  badgeText: { color: '#007BFF', fontSize: 11, fontWeight: 'bold' },
+  titleContainer: { flexDirection: 'row', alignItems: 'center', flex: 1 },
+  typeIcon: { marginRight: 8 },
+  cardTitle: { fontSize: 18, fontWeight: '600', color: '#343A40', flex: 1 },
+  badge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
+  badgeFrio: { backgroundColor: '#E7F5FF' },
+  badgeArejado: { backgroundColor: '#FFF4E6' },
+  badgeText: { fontSize: 11, fontWeight: 'bold' },
+  textFrio: { color: '#007BFF' },
+  textArejado: { color: '#FD7E14' },
   cardDescription: { fontSize: 14, color: '#6C757D', lineHeight: 20 },
   centerContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 40 },
   loadingText: { marginTop: 12, color: '#6C757D', fontSize: 16 },
   emptyText: { color: '#6C757D', fontSize: 16, textAlign: 'center' },
-  fab: {
-    position: 'absolute',
-    right: 20,
-    bottom: 20,
-    backgroundColor: '#007BFF',
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 4,
-  },
+  fab: { position: 'absolute', right: 20, bottom: 20, backgroundColor: '#007BFF', width: 56, height: 56, borderRadius: 28, justifyContent: 'center', alignItems: 'center', elevation: 4 },
   fabText: { color: '#FFF', fontSize: 24, fontWeight: 'bold' }
 });
