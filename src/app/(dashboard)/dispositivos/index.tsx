@@ -1,4 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import { api } from '@/src/service/api';
+import { useFocusEffect, useRouter } from 'expo-router';
+import React, { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -9,10 +11,6 @@ import {
   View
 } from 'react-native';
 
-// Importa a instância do Axios (ajuste o caminho se sua estrutura for um pouco diferente)
-import { api } from '@/src/service/api';
-
-// Definição da interface baseada no seu endpoint
 interface Dispositivo {
   id: string;
   nome?: string;
@@ -23,11 +21,11 @@ export default function DispositivosScreen() {
   const [dispositivos, setDispositivos] = useState<Dispositivo[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
+  
+  const router = useRouter(); // Instância do router adicionada
 
-  // Função para buscar os dispositivos da API
   const fetchDispositivos = async () => {
     try {
-      // Faz o GET mapeando o formato de resposta { dispositivos: [...] }
       const response = await api.get<{ dispositivos: Dispositivo[] }>('/dispositivo/');
       setDispositivos(response.data.dispositivos);
     } catch (error: any) {
@@ -39,22 +37,27 @@ export default function DispositivosScreen() {
     }
   };
 
-  // Busca os dados assim que a tela monta
-  useEffect(() => {
-    fetchDispositivos();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      fetchDispositivos();
+    }, [])
+  );
 
-  // Função executada ao arrastar a lista para baixo
   const handleRefresh = () => {
     setRefreshing(true);
     fetchDispositivos();
   };
 
-  // Renderização de cada card de dispositivo
   const renderDispositivoCard = ({ item }: { item: Dispositivo }) => (
-    <TouchableOpacity style={styles.card}>
+    <TouchableOpacity 
+      style={styles.card}
+      // NOVO: Navega para a tela de edição passando os dados do dispositivo selecionado
+      onPress={() => router.push({
+        pathname: '/(dashboard)/dispositivos/cadastro',
+        params: { id: item.id, nome: item.nome, ambienteId: item.ambienteId }
+      })}
+    >
       <View style={styles.cardHeader}>
-        {/* Fallback caso o nome venha nulo ou opcional */}
         <Text style={styles.cardTitle}>
           {item.nome || 'Dispositivo Sem Nome'}
         </Text>
@@ -62,18 +65,17 @@ export default function DispositivosScreen() {
       </View>
       
       <Text style={styles.cardText}>
-        <Text style={styles.boldLabel}>ID: </Text>{item.id}
+        <Text style={styles.boldLabel}>MAC ID: </Text>{item.id}
       </Text>
       
       {item.ambienteId && (
         <Text style={styles.cardText}>
-          <Text style={styles.boldLabel}>Ambiente ID: </Text>{item.ambienteId}
+          <Text style={styles.boldLabel}>Ambiente Vinculado: </Text>{item.ambienteId}
         </Text>
       )}
     </TouchableOpacity>
   );
 
-  // Tela de carregamento inicial
   if (loading && !refreshing) {
     return (
       <View style={styles.centerContainer}>
@@ -100,82 +102,47 @@ export default function DispositivosScreen() {
           </View>
         }
       />
+
+      {/* NOVO: Botão Flutuante (FAB) para abrir o formulário em modo Cadastro */}
+      <TouchableOpacity 
+        style={styles.fab} 
+        onPress={() => router.push('/dispositivos/cadastro')}
+      >
+        <Text style={styles.fabText}>+</Text>
+      </TouchableOpacity>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
-    backgroundColor: '#F8F9FA', 
-    paddingTop: 16 
-  },
-  screenTitle: { 
-    fontSize: 22, 
-    fontWeight: 'bold', 
-    color: '#212529', 
-    paddingHorizontal: 16, 
-    marginBottom: 16 
-  },
-  listContent: { 
-    paddingHorizontal: 16, 
-    paddingBottom: 24 
-  },
-  card: { 
-    backgroundColor: '#FFFFFF', 
-    borderRadius: 12, 
-    padding: 16, 
-    marginBottom: 12, 
-    borderWidth: 1, 
-    borderColor: '#E9ECEF', 
-    elevation: 2,
+  container: { flex: 1, backgroundColor: '#F8F9FA', paddingTop: 16 },
+  screenTitle: { fontSize: 22, fontWeight: 'bold', color: '#212529', paddingHorizontal: 16, marginBottom: 16 },
+  listContent: { paddingHorizontal: 16, paddingBottom: 24 },
+  card: { backgroundColor: '#FFFFFF', borderRadius: 12, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: '#E9ECEF', elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.2, shadowRadius: 1.41 },
+  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
+  cardTitle: { fontSize: 18, fontWeight: '600', color: '#343A40', flex: 1, marginRight: 8 },
+  statusDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: '#28A745' },
+  cardText: { fontSize: 13, color: '#6C757D', marginTop: 4 },
+  boldLabel: { fontWeight: '600', color: '#495057' },
+  centerContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 40 },
+  loadingText: { marginTop: 12, color: '#6C757D', fontSize: 16 },
+  emptyText: { color: '#6C757D', fontSize: 16, textAlign: 'center' },
+  // Estilos do FAB mapeados de forma limpa
+  fab: {
+    position: 'absolute',
+    right: 20,
+    bottom: 20,
+    backgroundColor: '#007BFF',
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 4,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 1.41,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
   },
-  cardHeader: { 
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
-    alignItems: 'center', 
-    marginBottom: 8 
-  },
-  cardTitle: { 
-    fontSize: 18, 
-    fontWeight: '600', 
-    color: '#343A40', 
-    flex: 1, 
-    marginRight: 8 
-  },
-  statusDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: '#28A745', // Verde indicando "Online/Ativo"
-  },
-  cardText: { 
-    fontSize: 13, 
-    color: '#6C757D', 
-    marginTop: 4 
-  },
-  boldLabel: {
-    fontWeight: '600',
-    color: '#495057'
-  },
-  centerContainer: { 
-    flex: 1, 
-    justifyContent: 'center', 
-    alignItems: 'center', 
-    paddingVertical: 40 
-  },
-  loadingText: { 
-    marginTop: 12, 
-    color: '#6C757D', 
-    fontSize: 16 
-  },
-  emptyText: { 
-    color: '#6C757D', 
-    fontSize: 16, 
-    textAlign: 'center' 
-  },
+  fabText: { color: '#FFF', fontSize: 24, fontWeight: 'bold' }
 });
