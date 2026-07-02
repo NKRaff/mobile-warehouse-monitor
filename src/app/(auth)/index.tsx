@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 
 // IMPORT DO EXPO ROUTER
+import { AuthProvider, useAuth } from '@/src/contexts/AuthContext';
 import { api } from '@/src/service/api';
 import { useRouter } from 'expo-router';
 
@@ -20,6 +21,7 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [loading, setLoading] = useState(false);
+  const { setUserId } = useAuth();
 
   // Inicializa o roteador do Expo
   const router = useRouter();
@@ -36,7 +38,9 @@ export default function LoginScreen() {
       const response = await api.post('/autenticacao', { email, senha });
       const { id } = response.data;
       
-      Alert.alert('Sucesso!', `Login realizado com sucesso. ID: ${id}`);
+      await setUserId(id)
+
+      //Alert.alert('Sucesso!', `Login realizado com sucesso. ID: ${id}`);
       
       // REDIRECIONAMENTO COM EXPO ROUTER
       // Substitui a tela atual pela tela de ambientes
@@ -54,32 +58,33 @@ export default function LoginScreen() {
   };
 
   return (
-    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.select({ios: 'padding', android: 'padding'})}>
-      <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps='handled'>
-        <View style={styles.container}>
-          <Text style={styles.title}>Bem-vindo</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Digite seu e-mail"
-            keyboardType="email-address"
-            autoCapitalize="none"
-            value={email}
-            onChangeText={setEmail}
-          />
-          <TextInput
-            style={styles.input}
-            placeholder="Digite sua senha"
-            secureTextEntry
-            value={senha}
-            onChangeText={setSenha}
-          />
-          <TouchableOpacity style={styles.button} onPress={handleLogin} disabled={loading}>
-            {loading ? <ActivityIndicator color="#FFF" /> : <Text style={styles.buttonText}>Entrar</Text>}
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
-    
+    <AuthProvider>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.select({ios: 'padding', android: 'padding'})}>
+        <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps='handled'>
+          <View style={styles.container}>
+            <Text style={styles.title}>Bem-vindo</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Digite seu e-mail"
+              keyboardType="email-address"
+              autoCapitalize="none"
+              value={email}
+              onChangeText={setEmail}
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="Digite sua senha"
+              secureTextEntry
+              value={senha}
+              onChangeText={setSenha}
+            />
+            <TouchableOpacity style={styles.button} onPress={handleLogin} disabled={loading}>
+              {loading ? <ActivityIndicator color="#FFF" /> : <Text style={styles.buttonText}>Entrar</Text>}
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </AuthProvider>
   );
 }
 

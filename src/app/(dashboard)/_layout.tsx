@@ -21,6 +21,14 @@ export default function DashboardLayout() {
         }} 
       />
 
+      <Tabs.Screen 
+        name="notificacoes" 
+        options={{ 
+          title: 'Notificações',
+          tabBarIcon: ({ color }) => <Ionicons name="notifications" size={24} color={color} />
+        }} 
+      />
+
     </Tabs>
   );
 }
