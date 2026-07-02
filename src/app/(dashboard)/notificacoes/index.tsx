@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 
 // Substitua pelo caminho real da sua configuração do axios
-import { AuthProvider, useAuth } from '@/src/contexts/AuthContext';
+import { useAuth } from '@/src/contexts/AuthContext';
 import { api } from '@/src/service/api';
 
 // Tipagem baseada no seu contrato de API
@@ -45,7 +45,7 @@ export default function NotificacoesScreen() {
       const listaRecebida: Notificacao[] = response.data.notificoes;
       
       // Agora o .filter é totalmente seguro, pois listaRecebida sempre será um Array
-      const alertasAtivos = listaRecebida;
+      const alertasAtivos = listaRecebida.filter(n => !n.lida);
       
       // Ordena colocando os "críticos" primeiro
       alertasAtivos.sort((a, b) => (a.nivel === 'critico' ? -1 : 1));
@@ -62,7 +62,13 @@ export default function NotificacoesScreen() {
 
   useEffect(() => {
     fetchNotificacoes();
-  }, []);
+
+    const interval = setInterval(() => {
+      fetchNotificacoes();
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [userId]);
 
   const handleRefresh = () => {
     setRefreshing(true);
@@ -142,24 +148,22 @@ export default function NotificacoesScreen() {
   }
 
   return (
-    <AuthProvider>
-      <View style={styles.container}>       
-        <FlatList
-          data={notificacoes}
-          keyExtractor={(item) => item.id}
-          renderItem={renderCard}
-          contentContainerStyle={styles.listContent}
-          refreshing={refreshing}
-          onRefresh={handleRefresh}
-          ListEmptyComponent={
-            <View style={styles.centerContainer}>
-              <Text style={styles.emptyText}>✅ Tudo seguro no armazém.</Text>
-              <Text style={styles.emptySubText}>Nenhuma anomalia detectada.</Text>
-            </View>
-          }
-        />
-      </View>
-    </AuthProvider>
+    <View style={styles.container}>       
+      <FlatList
+        data={notificacoes}
+        keyExtractor={(item) => item.id}
+        renderItem={renderCard}
+        contentContainerStyle={styles.listContent}
+        refreshing={refreshing}
+        onRefresh={handleRefresh}
+        ListEmptyComponent={
+          <View style={styles.centerContainer}>
+            <Text style={styles.emptyText}>✅ Tudo seguro no armazém.</Text>
+            <Text style={styles.emptySubText}>Nenhuma anomalia detectada.</Text>
+          </View>
+        }
+      />
+    </View>
   );
 }
 
