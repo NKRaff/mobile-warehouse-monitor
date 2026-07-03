@@ -1,7 +1,7 @@
 import { api } from '@/src/service/api';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import { useFocusEffect, useRouter } from 'expo-router';
+import React, { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -17,6 +17,10 @@ interface Ambiente {
   nome: string;
   tipo: 'frio' | 'arejado' | string;
   descricao: string;
+  temperatura_minima: number
+  temperatura_maxima: number
+  umidade_minima: number
+  umidade_maxima: number
 }
 
 export default function AmbienteScreen() {
@@ -39,9 +43,11 @@ export default function AmbienteScreen() {
     }
   };
 
-  useEffect(() => {
-    fetchAmbientes();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      fetchAmbientes();
+    }, [])
+  );
 
   const handleRefresh = () => {
     setRefreshing(true);
@@ -57,7 +63,16 @@ export default function AmbienteScreen() {
         // Navega para a tela de detalhes passando o ID na URL e metadados por query params
         onPress={() => router.push({
           pathname: `/(dashboard)/ambientes/[id]`,
-          params: { id: item.id, nome: item.nome, tipo: item.tipo }
+          params: { 
+            id: item.id, 
+            nome: item.nome, 
+            tipo: item.tipo,
+            descricao: item.descricao,
+            temperatura_minima: item.temperatura_minima,
+            temperatura_maxima: item.temperatura_maxima,
+            umidade_minima: item.umidade_minima,
+            umidade_maxima: item.umidade_maxima,
+          }
         })}
       >
         <View style={styles.cardHeader}>
