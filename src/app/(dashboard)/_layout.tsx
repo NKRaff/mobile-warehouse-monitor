@@ -29,6 +29,14 @@ export default function DashboardLayout() {
         }} 
       />
 
+      <Tabs.Screen 
+        name="usuarios" 
+        options={{ 
+          title: 'Usuarios',
+          tabBarIcon: ({ color }) => <Ionicons name="person" size={24} color={color} />
+        }} 
+      />
+
     </Tabs>
   );
 }
