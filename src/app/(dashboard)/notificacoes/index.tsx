@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -12,6 +12,7 @@ import {
 // Substitua pelo caminho real da sua configuração do axios
 import { useAuth } from '@/src/contexts/AuthContext';
 import { api } from '@/src/service/api';
+import { useFocusEffect } from 'expo-router';
 
 // Tipagem baseada no seu contrato de API
 interface Notificacao {
@@ -60,15 +61,17 @@ export default function NotificacoesScreen() {
     }
   };
 
-  useEffect(() => {
-    fetchNotificacoes();
-
-    const interval = setInterval(() => {
+  useFocusEffect(
+    useCallback(() => {
       fetchNotificacoes();
-    }, 5000);
 
-    return () => clearInterval(interval);
-  }, [userId]);
+      const interval = setInterval(() => {
+        fetchNotificacoes();
+      }, 5000);
+
+      return () => clearInterval(interval);
+    }, [userId])
+  );
 
   const handleRefresh = () => {
     setRefreshing(true);
