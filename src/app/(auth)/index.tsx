@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 
 // IMPORT DO EXPO ROUTER
-import { AuthProvider, useAuth } from '@/src/contexts/AuthContext';
+import { useAuth } from '@/src/contexts/AuthContext';
 import { api } from '@/src/service/api';
 import { useRouter } from 'expo-router';
 
@@ -58,33 +58,31 @@ export default function LoginScreen() {
   };
 
   return (
-    <AuthProvider>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.select({ios: 'padding', android: 'padding'})}>
-        <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps='handled'>
-          <View style={styles.container}>
-            <Text style={styles.title}>Bem-vindo</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Digite seu e-mail"
-              keyboardType="email-address"
-              autoCapitalize="none"
-              value={email}
-              onChangeText={setEmail}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Digite sua senha"
-              secureTextEntry
-              value={senha}
-              onChangeText={setSenha}
-            />
-            <TouchableOpacity style={styles.button} onPress={handleLogin} disabled={loading}>
-              {loading ? <ActivityIndicator color="#FFF" /> : <Text style={styles.buttonText}>Entrar</Text>}
-            </TouchableOpacity>
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </AuthProvider>
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.select({ios: 'padding', android: 'padding'})}>
+      <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps='handled'>
+        <View style={styles.container}>
+          <Text style={styles.title}>Bem-vindo</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Digite seu e-mail"
+            keyboardType="email-address"
+            autoCapitalize="none"
+            value={email}
+            onChangeText={setEmail}
+          />
+          <TextInput
+            style={styles.input}
+            placeholder="Digite sua senha"
+            secureTextEntry
+            value={senha}
+            onChangeText={setSenha}
+          />
+          <TouchableOpacity style={styles.button} onPress={handleLogin} disabled={loading}>
+            {loading ? <ActivityIndicator color="#FFF" /> : <Text style={styles.buttonText}>Entrar</Text>}
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
