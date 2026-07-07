@@ -44,6 +44,7 @@ export default function LoginScreen() {
       return;
     }
 
+
     setLoading(true);
 
     try {
@@ -57,9 +58,18 @@ export default function LoginScreen() {
 
     } catch (error: any) {
       console.error(error);
+      
+      let mensagemErro = 'Verifique suas credenciais de acesso.';
+      if (error.response?.status === 400) {
+        // Senha/e-mail errados ou não cadastrados
+        mensagemErro = 'E-mail ou senha incorretos. Por favor, tente novamente.';
+      } else if (error.message === 'Network Error') {
+        mensagemErro = 'Não foi possível conectar ao servidor. Verifique sua conexão com a rede.';
+      }
+
       setModalConfig({
         title: 'Falha no Login',
-        message: error.response?.data?.message || 'Verifique suas credenciais de acesso.',
+        message: mensagemErro,
         type: 'warning',
         onConfirm: () => {}
       });
