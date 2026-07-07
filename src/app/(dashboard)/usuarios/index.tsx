@@ -16,7 +16,7 @@ import {
 } from 'react-native';
 
 export default function PerfilUsuarioScreen() {
-  const { userId } = useAuth();
+  const { userId, setUserId } = useAuth();
   
   console.log('🔄 Renderizando PerfilUsuarioScreen | userId atual:', userId);
 
@@ -163,6 +163,22 @@ export default function PerfilUsuarioScreen() {
       setDeleting(false);
     }
   };
+ 
+  const handleLogout = () => {
+    setModalConfig({
+      title: 'Sair da Conta',
+      message: 'Deseja realmente encerrar sua sessão no Warehouse Monitor?',
+      type: 'confirm',
+      onConfirm: async () => {
+        try {
+          await setUserId(null);
+          router.replace('/(auth)');
+        } catch (error) {
+          console.error(error);
+        }
+      }
+    });
+  };
 
   if (loadingData) {
     return (
@@ -243,6 +259,20 @@ export default function PerfilUsuarioScreen() {
                 />
               )}
             </View>
+          </View>
+
+          {/* SEÇÃO SESSÃO (LOGOUT) */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Sessão</Text>
+            <Text style={styles.sessionText}>Você está atualmente conectado como operador do armazém.</Text>
+            <TouchableOpacity 
+              style={styles.btnLogout} 
+              onPress={handleLogout}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="log-out-outline" size={20} color="#4F46E5" style={{ marginRight: 8 }} />
+              <Text style={styles.btnLogoutText}>Encerrar Sessão</Text>
+            </TouchableOpacity>
           </View>
 
           {/* ZONA DE PERIGO */}
@@ -408,6 +438,10 @@ const styles = StyleSheet.create({
   },
   centerContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F1F5F9' },
   loadingText: { marginTop: 12, color: '#64748B', fontSize: 15 },
+
+  btnLogout: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', backgroundColor: '#EEF2FF', borderWidth: 1, borderColor: '#C7D2FE', borderRadius: 12, paddingVertical: 14, marginTop: 8 },
+  btnLogoutText: { color: '#4F46E5', fontSize: 15, fontWeight: 'bold' },
+  sessionText: { fontSize: 12, color: '#64748B', marginBottom: 16, lineHeight: 16 },
 
   // Estilos do Modal Customizado
   modalOverlay: {
