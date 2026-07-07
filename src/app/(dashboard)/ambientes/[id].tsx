@@ -6,6 +6,8 @@ import {
   ActivityIndicator,
   Alert,
   DimensionValue,
+  Modal,
+  Platform,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -41,6 +43,14 @@ export default function DetalhesAmbienteScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
+  // Estado do Modal Customizado
+  const [modalConfig, setModalConfig] = useState<{
+    title: string;
+    message: string;
+    type: 'success' | 'warning' | 'confirm';
+    onConfirm: () => void;
+  } | null>(null);
+
   // Alteração 1: Pegando os limites configurados dinamicamente com fallback caso venham indefinidos
   const limites = {
     tempMin: temperatura_minima ? parseFloat(temperatura_minima) : 0,
@@ -56,7 +66,7 @@ export default function DetalhesAmbienteScreen() {
         api.post<Medicao>('/medicao/buscar-ultima', { ambienteId: id, tipo: 'umidade' }).catch(() => null),
         api.post<{ medicoes: Medicao[] }>('/medicao/buscar', { 
           ambienteId: id, 
-          startData: new Date(Date.now() - 4 * 60 * 60 * 1000) 
+          startData: new Date(Date.now() - 24 * 60 * 60 * 1000) 
         }).catch(() => ({ data: { medicoes: [] } }))
       ]);
 
@@ -70,7 +80,12 @@ export default function DetalhesAmbienteScreen() {
       }
     } catch (error) {
       console.error(error);
-      Alert.alert('Erro', 'Falha ao atualizar dados de telemetria.');
+      setModalConfig({
+        title: 'Erro',
+        message: 'Falha ao atualizar dados de telemetria.',
+        type: 'warning',
+        onConfirm: () => {}
+      });
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -87,29 +102,34 @@ export default function DetalhesAmbienteScreen() {
   };
 
   const handleDeletar = () => {
-    Alert.alert(
-      'Remover Setor',
-      `Tem certeza que deseja excluir o ambiente "${nome}"? Dispositivos vinculados ficarão sem setor.`,
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Sim, Excluir',
-          style: 'destructive',
-          onPress: async () => {
-            setDeleting(true);
-            try {
-              await api.delete(`/ambiente/${id}`);
-              Alert.alert('Sucesso', 'Ambiente removido do sistema.');
-              router.replace('/ambientes');
-            } catch (error) {
-              console.error(error);
-              Alert.alert('Erro', 'Não foi possível deletar este ambiente.');
-              setDeleting(false);
-            }
-          }
-        }
-      ]
-    );
+    setModalConfig({
+      title: 'Remover Setor',
+      message: `Tem certeza que deseja excluir o ambiente "${nome}"? Dispositivos vinculados ficarão sem setor.`,
+      type: 'confirm',
+      onConfirm: executarDelecao
+    });
+  };
+
+  const executarDelecao = async () => {
+    setDeleting(true);
+    try {
+      await api.delete(`/ambiente/${id}`);
+      setModalConfig({
+        title: 'Sucesso',
+        message: 'Ambiente removido com sucesso do sistema.',
+        type: 'success',
+        onConfirm: () => router.replace('/ambientes')
+      });
+    } catch (error) {
+      console.error(error);
+      setModalConfig({
+        title: 'Erro',
+        message: 'Não foi possível deletar este ambiente.',
+        type: 'warning',
+        onConfirm: () => {}
+      });
+      setDeleting(false);
+    }
   };
 
   const isTempSegura = tempAtual ? (tempAtual.valor >= limites.tempMin && tempAtual.valor <= limites.tempMax) : true;
@@ -160,11 +180,12 @@ export default function DetalhesAmbienteScreen() {
   };
 
   return (
-    <ScrollView 
-      style={styles.container}
-      contentContainerStyle={styles.scrollContent}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-    >
+    <View style={{ flex: 1 }}>
+      <ScrollView 
+        style={styles.container}
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      >
       <View style={styles.header}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <View style={{ flex: 1, paddingRight: 12 }}>
@@ -185,7 +206,7 @@ export default function DetalhesAmbienteScreen() {
                 } 
               })}
             >
-              <Ionicons name="pencil" size={18} color="#007BFF" />
+              <Ionicons name="pencil" size={18} color="#4F46E5" />
             </TouchableOpacity>
 
             <TouchableOpacity 
@@ -196,7 +217,7 @@ export default function DetalhesAmbienteScreen() {
               {deleting ? (
                 <ActivityIndicator size="small" color="#DC3545" />
               ) : (
-                <Ionicons name="trash-outline" size={18} color="#DC3545" />
+                <Ionicons name="trash-outline" size={18} color="#EF4444" />
               )}
             </TouchableOpacity>
           </View>
@@ -257,36 +278,189 @@ export default function DetalhesAmbienteScreen() {
         )}
       </View>
     </ScrollView>
+
+      {/* MODAL DIALOG CUSTOMIZADO (ALERT E CONFIRM PREMIUM) */}
+      <Modal
+        transparent
+        visible={!!modalConfig}
+        animationType="fade"
+        onRequestClose={() => setModalConfig(null)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <View style={[
+              styles.modalIconBg, 
+              modalConfig?.type === 'success' ? styles.iconBgSuccess : 
+              modalConfig?.type === 'confirm' ? styles.iconBgDanger : 
+              styles.iconBgWarning
+            ]}>
+              <Ionicons 
+                name={
+                  modalConfig?.type === 'success' ? 'checkmark-circle-outline' : 
+                  modalConfig?.type === 'confirm' ? 'trash-outline' : 
+                  'warning-outline'
+                } 
+                size={28} 
+                color={
+                  modalConfig?.type === 'success' ? '#10B981' : 
+                  modalConfig?.type === 'confirm' ? '#EF4444' : 
+                  '#F59E0B'
+                } 
+              />
+            </View>
+            
+            <Text style={styles.modalTitle}>{modalConfig?.title}</Text>
+            <Text style={styles.modalMessage}>{modalConfig?.message}</Text>
+            
+            <View style={styles.modalButtonsRow}>
+              {modalConfig?.type === 'confirm' && (
+                <TouchableOpacity 
+                  style={[styles.modalButton, styles.modalButtonCancel]} 
+                  onPress={() => setModalConfig(null)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.modalButtonTextCancel}>Cancelar</Text>
+                </TouchableOpacity>
+              )}
+              
+              <TouchableOpacity 
+                style={[
+                  styles.modalButton, 
+                  modalConfig?.type === 'confirm' ? styles.modalButtonConfirmDelete : styles.modalButtonConfirm
+                ]} 
+                onPress={() => {
+                  const action = modalConfig?.onConfirm;
+                  setModalConfig(null);
+                  if (action) action();
+                }}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.modalButtonTextConfirm}>
+                  {modalConfig?.type === 'confirm' ? 'Confirmar' : 'OK'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8F9FA' },
-  scrollContent: { padding: 16, paddingBottom: 40 },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F8F9FA' },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24
+  },
+  modalCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 24,
+    width: '100%',
+    maxWidth: 320,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    elevation: 8
+  },
+  modalIconBg: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16
+  },
+  iconBgSuccess: {
+    backgroundColor: '#D1FAE5'
+  },
+  iconBgDanger: {
+    backgroundColor: '#FEF2F2'
+  },
+  iconBgWarning: {
+    backgroundColor: '#FEF3C7'
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#1E293B',
+    marginBottom: 8,
+    textAlign: 'center'
+  },
+  modalMessage: {
+    fontSize: 14,
+    color: '#64748B',
+    marginBottom: 24,
+    textAlign: 'center',
+    lineHeight: 20
+  },
+  modalButtonsRow: {
+    flexDirection: 'row',
+    gap: 12,
+    width: '100%'
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 46
+  },
+  modalButtonCancel: {
+    backgroundColor: '#F1F5F9',
+    borderWidth: 1,
+    borderColor: '#E2E8F0'
+  },
+  modalButtonConfirm: {
+    backgroundColor: '#4F46E5'
+  },
+  modalButtonConfirmDelete: {
+    backgroundColor: '#EF4444'
+  },
+  modalButtonTextCancel: {
+    color: '#475569',
+    fontSize: 14,
+    fontWeight: '600'
+  },
+  modalButtonTextConfirm: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600'
+  },
+  container: { flex: 1, backgroundColor: '#F1F5F9' },
+  scrollContent: { padding: 16, paddingBottom: 96 },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F1F5F9' },
   loadingText: { marginTop: 12, color: '#6C757D', fontSize: 15 },
-  header: { marginBottom: 20, backgroundColor: '#FFF', padding: 16, borderRadius: 12, borderWidth: 1, borderColor: '#E9ECEF', elevation: 1 },
+  header: { marginBottom: 20, backgroundColor: '#FFF', padding: 16, borderRadius: 16, borderWidth: 1, borderColor: '#E2E8F0', elevation: 1 },
   title: { fontSize: 22, fontWeight: 'bold', color: '#212529' },
   descriptionText: { fontSize: 14, color: '#495057', marginTop: 6, lineHeight: 18 },
   subtitle: { fontSize: 12, color: '#ADB5BD', marginTop: 8, fontFamily: 'monospace' },
   actionButtonsContainer: { flexDirection: 'row', gap: 8 },
-  btnAcao: { width: 38, height: 38, borderRadius: 8, backgroundColor: '#E7F1FF', borderWidth: 1, borderColor: '#B6D4FE', justifyContent: 'center', alignItems: 'center' },
-  btnDeletar: { backgroundColor: '#F8D7DA', borderColor: '#F5C2C7' },
+  btnAcao: { width: 38, height: 38, borderRadius: 10, backgroundColor: '#EEF2FF', borderWidth: 1, borderColor: '#C7D2FE', justifyContent: 'center', alignItems: 'center' },
+  btnDeletar: { backgroundColor: '#FEE2E2', borderColor: '#FCA5A5' },
   sectionTitle: { fontSize: 15, fontWeight: '700', color: '#495057', marginBottom: 12, marginTop: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
   row: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 },
-  telemetriaCard: { flex: 0.48, backgroundColor: '#FFF', borderRadius: 12, padding: 14, borderWidth: 1.5, elevation: 1 },
-  borderSeguro: { borderColor: '#A3E635' },
-  borderInseguro: { borderColor: '#FCA5A5' },
+  telemetriaCard: { flex: 0.48, backgroundColor: '#FFF', borderRadius: 16, padding: 14, borderWidth: 1.5, elevation: 1 },
+  borderSeguro: { borderColor: '#10B981' },
+  borderInseguro: { borderColor: '#EF4444' },
   cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
   statusBadge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
-  badgeSeguro: { backgroundColor: '#DCFCE7' },
+  badgeSeguro: { backgroundColor: '#D1FAE5' },
   badgeInseguro: { backgroundColor: '#FEE2E2' },
   statusText: { fontSize: 11, fontWeight: 'bold' },
-  textSeguro: { color: '#166534' },
-  textInseguro: { color: '#991B1B' },
+  textSeguro: { color: '#065F46' },
+  textInseguro: { color: '#B91C1C' },
   valorPrincipal: { fontSize: 34, fontWeight: 'bold', color: '#1F2937', marginVertical: 2 },
   legendaLimite: { fontSize: 11, color: '#6B7280', marginTop: 2 },
-  graficoContainer: { backgroundColor: '#FFF', borderRadius: 12, padding: 16, borderWidth: 1, borderColor: '#E5E7EB' },
+  graficoContainer: { backgroundColor: '#FFF', borderRadius: 16, padding: 16, borderWidth: 1, borderColor: '#E2E8F0' },
   subSectionHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12, borderBottomWidth: 1, borderBottomColor: '#F3F4F6', paddingBottom: 6 },
   subSectionTitle: { fontSize: 14, fontWeight: '600', color: '#374151', marginLeft: 6 },
   emptyGraphText: { color: '#9CA3AF', textAlign: 'center', paddingVertical: 14, fontSize: 13 },

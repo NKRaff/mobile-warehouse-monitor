@@ -1,20 +1,19 @@
 import React, { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   FlatList,
+  Modal,
   StyleSheet,
   Text,
   TouchableOpacity,
   View
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
-// Substitua pelo caminho real da sua configuração do axios
 import { useAuth } from '@/src/contexts/AuthContext';
 import { api } from '@/src/service/api';
 import { useFocusEffect } from 'expo-router';
 
-// Tipagem baseada no seu contrato de API
 interface Notificacao {
   id: string;
   dispositivoId: string;
@@ -33,28 +32,33 @@ export default function NotificacoesScreen() {
   const [notificacoes, setNotificacoes] = useState<Notificacao[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
-
-  // Mock de ID do usuário logado (Idealmente viria do seu Context/Auth)
   const { userId } = useAuth();
+
+  // Estado do Modal Customizado
+  const [modalConfig, setModalConfig] = useState<{
+    title: string;
+    message: string;
+    type: 'success' | 'warning' | 'confirm';
+    onConfirm: () => void;
+  } | null>(null);
 
   const fetchNotificacoes = async () => {
     try {
-      // Usamos 'any' temporariamente na tipagem da resposta para lidar com a incerteza do backend
       const response = await api.get<any>(`/notificacao/${userId}`);
+      const listaRecebida: Notificacao[] = response.data.notificoes || [];
       
-      // Mapeia de forma segura: pega 'notificacoes', ou 'notificoes' (typo), ou um array vazio por padrão
-      const listaRecebida: Notificacao[] = response.data.notificoes;
-      
-      // Agora o .filter é totalmente seguro, pois listaRecebida sempre será um Array
       const alertasAtivos = listaRecebida.filter(n => !n.lida);
-      
-      // Ordena colocando os "críticos" primeiro
       alertasAtivos.sort((a, b) => (a.nivel === 'critico' ? -1 : 1));
       
       setNotificacoes(alertasAtivos);
     } catch (error) {
       console.error("Erro na API de notificações:", error);
-      Alert.alert('Erro', 'Não foi possível carregar os alertas.');
+      setModalConfig({
+        title: 'Erro',
+        message: 'Não foi possível carregar os alertas do armazém.',
+        type: 'warning',
+        onConfirm: () => {}
+      });
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -78,22 +82,21 @@ export default function NotificacoesScreen() {
     fetchNotificacoes();
   };
 
-  // 2. Ação de marcar como lida
   const marcarComoLida = async (notificacaoId: string) => {
     try {
-      // Remove da interface imediatamente para UX mais fluida (Optimistic Update)
       setNotificacoes(prev => prev.filter(n => n.id !== notificacaoId));
-      
-      // Avisa o backend
       await api.post('/notificacao/', { notificacaoId });
     } catch (error) {
-      // Se falhar, recarrega a lista original
-      Alert.alert('Erro', 'Não foi possível atualizar o status da notificação.');
+      setModalConfig({
+        title: 'Erro',
+        message: 'Não foi possível atualizar o status da notificação.',
+        type: 'warning',
+        onConfirm: () => {}
+      });
       fetchNotificacoes();
     }
   };
 
-  // 3. Renderização do Card (Painel de Criticidade e Confronto)
   const renderCard = ({ item }: { item: Notificacao }) => {
     const isCritico = item.nivel === 'critico';
     const isTemperatura = item.sensorTipo === 'temperatura';
@@ -122,9 +125,9 @@ export default function NotificacoesScreen() {
           </View>
           <View style={styles.confrontoDivider} />
           <View style={styles.confrontoItem}>
-            <Text style={styles.confrontoLabel}>Limite Permitido</Text>
+            <Text style={styles.confrontoLabel}>Limite Recomendado</Text>
             <Text style={styles.confrontoValorLimite}>
-              Min {item.limiteMin}{unidade} ~ Max {item.limiteMax}{unidade}
+              {item.limiteMin}{unidade} a {item.limiteMax}{unidade}
             </Text>
           </View>
         </View>
@@ -144,28 +147,96 @@ export default function NotificacoesScreen() {
   if (loading && !refreshing) {
     return (
       <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#DC3545" />
+        <ActivityIndicator size="large" color="#4F46E5" />
         <Text style={styles.loadingText}>Buscando alertas de anomalia...</Text>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>       
-      <FlatList
-        data={notificacoes}
-        keyExtractor={(item) => item.id}
-        renderItem={renderCard}
-        contentContainerStyle={styles.listContent}
-        refreshing={refreshing}
-        onRefresh={handleRefresh}
-        ListEmptyComponent={
-          <View style={styles.centerContainer}>
-            <Text style={styles.emptyText}>✅ Tudo seguro no armazém.</Text>
-            <Text style={styles.emptySubText}>Nenhuma anomalia detectada.</Text>
+    <View style={{ flex: 1 }}>
+      <View style={styles.container}>       
+        <FlatList
+          data={notificacoes}
+          keyExtractor={(item) => item.id}
+          renderItem={renderCard}
+          contentContainerStyle={styles.listContent}
+          refreshing={refreshing}
+          onRefresh={handleRefresh}
+          ListEmptyComponent={
+            <View style={styles.centerContainer}>
+              <Ionicons name="checkmark-circle-outline" size={48} color="#10B981" />
+              <Text style={styles.emptyText}>Tudo seguro no armazém</Text>
+              <Text style={styles.emptySubText}>Nenhuma anomalia crítica detectada.</Text>
+            </View>
+          }
+        />
+      </View>
+
+      {/* MODAL DIALOG CUSTOMIZADO (ALERT E CONFIRM PREMIUM) */}
+      <Modal
+        transparent
+        visible={!!modalConfig}
+        animationType="fade"
+        onRequestClose={() => setModalConfig(null)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <View style={[
+              styles.modalIconBg, 
+              modalConfig?.type === 'success' ? styles.iconBgSuccess : 
+              modalConfig?.type === 'confirm' ? styles.iconBgDanger : 
+              styles.iconBgWarning
+            ]}>
+              <Ionicons 
+                name={
+                  modalConfig?.type === 'success' ? 'checkmark-circle-outline' : 
+                  modalConfig?.type === 'confirm' ? 'trash-outline' : 
+                  'warning-outline'
+                } 
+                size={28} 
+                color={
+                  modalConfig?.type === 'success' ? '#10B981' : 
+                  modalConfig?.type === 'confirm' ? '#EF4444' : 
+                  '#F59E0B'
+                } 
+              />
+            </View>
+            
+            <Text style={styles.modalTitle}>{modalConfig?.title}</Text>
+            <Text style={styles.modalMessage}>{modalConfig?.message}</Text>
+            
+            <View style={styles.modalButtonsRow}>
+              {modalConfig?.type === 'confirm' && (
+                <TouchableOpacity 
+                  style={[styles.modalButton, styles.modalButtonCancel]} 
+                  onPress={() => setModalConfig(null)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.modalButtonTextCancel}>Cancelar</Text>
+                </TouchableOpacity>
+              )}
+              
+              <TouchableOpacity 
+                style={[
+                  styles.modalButton, 
+                  modalConfig?.type === 'confirm' ? styles.modalButtonConfirmDelete : styles.modalButtonConfirm
+                ]} 
+                onPress={() => {
+                  const action = modalConfig?.onConfirm;
+                  setModalConfig(null);
+                  if (action) action();
+                }}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.modalButtonTextConfirm}>
+                  {modalConfig?.type === 'confirm' ? 'Confirmar' : 'OK'}
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        }
-      />
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -173,37 +244,32 @@ export default function NotificacoesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FA',
-    paddingTop: 16,
-  },
-  screenTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#212529',
-    paddingHorizontal: 16,
-    marginBottom: 16,
+    backgroundColor: '#F1F5F9',
+    paddingTop: 8,
   },
   listContent: {
     paddingHorizontal: 16,
-    paddingBottom: 24,
+    paddingBottom: 40,
   },
   card: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    borderRadius: 16,
     padding: 16,
     marginBottom: 16,
-    borderWidth: 2,
-    elevation: 3,
-    shadowColor: '#000',
+    borderWidth: 1.5,
+    shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.02,
     shadowRadius: 4,
+    elevation: 1,
   },
   cardCritico: {
-    borderColor: '#DC3545', // Vermelho (Perigo)
+    borderColor: '#FCA5A5', // Vermelho suave
+    backgroundColor: '#FFF8F8'
   },
   cardAviso: {
-    borderColor: '#FD7E14', // Laranja (Atenção)
+    borderColor: '#FDE68A', // Laranja/Amarelo suave
+    backgroundColor: '#FFFDF5'
   },
   cardHeader: {
     flexDirection: 'row',
@@ -215,31 +281,35 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     paddingHorizontal: 8,
     borderRadius: 6,
-    fontSize: 12,
-    fontWeight: 'bold',
+    fontSize: 10,
+    fontWeight: '800',
     color: '#FFF',
+    letterSpacing: 0.5
   },
   badgeCritico: {
-    backgroundColor: '#DC3545',
+    backgroundColor: '#EF4444',
   },
   badgeAviso: {
-    backgroundColor: '#FD7E14',
+    backgroundColor: '#F59E0B',
   },
   sensorTipo: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#495057',
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#475569',
   },
   mensagem: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#212529',
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#1E293B',
     marginBottom: 16,
+    lineHeight: 20
   },
   confrontoContainer: {
     flexDirection: 'row',
-    backgroundColor: '#F1F3F5',
-    borderRadius: 8,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 12,
     padding: 12,
     marginBottom: 16,
     alignItems: 'center',
@@ -250,58 +320,148 @@ const styles = StyleSheet.create({
   },
   confrontoDivider: {
     width: 1,
-    height: '100%',
-    backgroundColor: '#CED4DA',
+    height: 30,
+    backgroundColor: '#E2E8F0',
     marginHorizontal: 8,
   },
   confrontoLabel: {
-    fontSize: 12,
-    color: '#6C757D',
+    fontSize: 11,
+    color: '#64748B',
     marginBottom: 4,
   },
   confrontoValor: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#212529',
+    fontWeight: '800',
+    color: '#1E293B',
   },
   confrontoValorLimite: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
-    color: '#495057',
+    color: '#475569',
   },
   textoCritico: {
-    color: '#DC3545',
+    color: '#EF4444',
   },
   btnLer: {
-    backgroundColor: '#E9ECEF',
+    backgroundColor: '#EEF2FF',
     paddingVertical: 12,
-    borderRadius: 8,
+    borderRadius: 12,
     alignItems: 'center',
   },
   btnLerText: {
-    color: '#495057',
-    fontWeight: 'bold',
-    fontSize: 15,
+    color: '#4F46E5',
+    fontWeight: '700',
+    fontSize: 14,
   },
   centerContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 60,
+    paddingVertical: 80,
   },
   loadingText: {
     marginTop: 12,
-    color: '#6C757D',
-    fontSize: 16,
+    color: '#64748B',
+    fontSize: 15,
   },
   emptyText: {
-    color: '#28A745',
-    fontSize: 18,
-    fontWeight: 'bold',
+    color: '#10B981',
+    fontSize: 16,
+    fontWeight: '800',
+    marginTop: 12
   },
   emptySubText: {
-    color: '#6C757D',
-    fontSize: 15,
+    color: '#64748B',
+    fontSize: 14,
     marginTop: 4,
   },
+
+  // Estilos do Modal Customizado
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24
+  },
+  modalCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 24,
+    width: '100%',
+    maxWidth: 320,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    elevation: 8
+  },
+  modalIconBg: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16
+  },
+  iconBgSuccess: {
+    backgroundColor: '#D1FAE5'
+  },
+  iconBgDanger: {
+    backgroundColor: '#FEF2F2'
+  },
+  iconBgWarning: {
+    backgroundColor: '#FEF3C7'
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#1E293B',
+    marginBottom: 8,
+    textAlign: 'center'
+  },
+  modalMessage: {
+    fontSize: 14,
+    color: '#64748B',
+    marginBottom: 24,
+    textAlign: 'center',
+    lineHeight: 20
+  },
+  modalButtonsRow: {
+    flexDirection: 'row',
+    gap: 12,
+    width: '100%'
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 46
+  },
+  modalButtonCancel: {
+    backgroundColor: '#F1F5F9',
+    borderWidth: 1,
+    borderColor: '#E2E8F0'
+  },
+  modalButtonConfirm: {
+    backgroundColor: '#4F46E5'
+  },
+  modalButtonConfirmDelete: {
+    backgroundColor: '#EF4444'
+  },
+  modalButtonTextCancel: {
+    color: '#475569',
+    fontSize: 14,
+    fontWeight: '600'
+  },
+  modalButtonTextConfirm: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600'
+  }
 });
