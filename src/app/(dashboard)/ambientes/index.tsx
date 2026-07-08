@@ -90,7 +90,13 @@ export default function AmbienteScreen() {
   useFocusEffect(
     useCallback(() => {
       fetchAmbientes();
-    }, [])
+
+      const interval = setInterval(() => {
+        fetchAmbientes();
+      }, 5000);
+
+      return () => clearInterval(interval);
+    }, [ambientes])
   );
 
   const handleRefresh = () => {
