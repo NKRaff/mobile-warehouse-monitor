@@ -5,7 +5,9 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  KeyboardAvoidingView,
   Modal,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -166,157 +168,166 @@ export default function CadastroDispositivoScreen() {
   };
 
   return (
-    <View style={{ flex: 1 }}>
-      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-        <View style={styles.header}>
-          <Text style={styles.title}>{isEditing ? 'Configurar Sensor' : 'Novo Sensor IoT'}</Text>
-          <Text style={styles.subtitle}>
-            {isEditing ? 'Altere o apelido ou o local de operação.' : 'Vincule um novo hardware à rede do armazém.'}
-          </Text>
-        </View>
-
-        {/* FORMULÁRIO ENCAPSULADO EM CARD */}
-        <View style={styles.formCard}>
-          <Text style={styles.label}>Endereço MAC (Identificador Único)</Text>
-          <TextInput
-            style={[styles.input, isEditing && styles.inputDisabled]}
-            placeholder="00:1A:2B:3C:4D:5E"
-            value={macId}
-            onChangeText={handleMacChange}
-            editable={!isEditing}
-            keyboardType="default"
-            autoCapitalize="characters"
-          />
-          {isEditing && (
-            <Text style={styles.infoText}>O endereço MAC de placas físicas não pode ser modificado.</Text>
-          )}
-
-          <Text style={styles.label}>Nome/Apelido do Dispositivo</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Ex: Sensor Entrada Extrema"
-            value={nome}
-            onChangeText={setNome}
-          />
-
-          <Text style={styles.label}>Vincular ao Setor / Ambiente</Text>
-          <View style={styles.pickerContainer}>
-            {loadingAmbientes ? (
-              <ActivityIndicator size="small" color="#4F46E5" style={{ padding: 14 }} />
-            ) : (
-              <Picker
-                selectedValue={ambienteId}
-                onValueChange={(itemValue) => setAmbienteId(itemValue)}
-                style={styles.picker}
-              >
-                <Picker.Item label="⚠️ Deixar sem vínculo (Em Estoque)" value="" />
-                {ambientes.map((amb) => (
-                  <Picker.Item key={amb.id} label={amb.nome} value={amb.id} />
-                ))}
-              </Picker>
-            )}
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+      <View style={{ flex: 1 }}>
+        <ScrollView 
+          style={styles.container} 
+          contentContainerStyle={styles.content} 
+          keyboardShouldPersistTaps='handled'
+        >
+          <View style={styles.header}>
+            <Text style={styles.title}>{isEditing ? 'Configurar Sensor' : 'Novo Sensor IoT'}</Text>
+            <Text style={styles.subtitle}>
+              {isEditing ? 'Altere o apelido ou o local de operação.' : 'Vincule um novo hardware à rede do armazém.'}
+            </Text>
           </View>
 
-          {/* BOTÃO PRINCIPAL */}
-          <TouchableOpacity 
-            style={[styles.btnSalvar, loadingSubmit && styles.btnDisabled]} 
-            onPress={handleSalvar}
-            disabled={loadingSubmit}
-            activeOpacity={0.8}
-          >
-            {loadingSubmit ? (
-              <ActivityIndicator color="#FFF" />
-            ) : (
-              <Text style={styles.btnSalvarText}>{isEditing ? 'Atualizar Vínculo' : 'Registrar Dispositivo'}</Text>
+          {/* FORMULÁRIO ENCAPSULADO EM CARD */}
+          <View style={styles.formCard}>
+            <Text style={styles.label}>Endereço MAC (Identificador Único)</Text>
+            <TextInput
+              style={[styles.input, isEditing && styles.inputDisabled]}
+              placeholder="00:1A:2B:3C:4D:5E"
+              value={macId}
+              onChangeText={handleMacChange}
+              editable={!isEditing}
+              keyboardType="default"
+              autoCapitalize="characters"
+            />
+            {isEditing && (
+              <Text style={styles.infoText}>O endereço MAC de placas físicas não pode ser modificado.</Text>
             )}
-          </TouchableOpacity>
 
-          {/* BOTÃO DELETAR */}
-          {isEditing && (
-            <TouchableOpacity 
-              style={styles.btnExcluir} 
-              onPress={handleDeletar}
-              disabled={deleting}
-              activeOpacity={0.7}
-            >
-              {deleting ? (
-                <ActivityIndicator color="#EF4444" />
+            <Text style={styles.label}>Nome/Apelido do Dispositivo</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Ex: Sensor Entrada Extrema"
+              value={nome}
+              onChangeText={setNome}
+            />
+
+            <Text style={styles.label}>Vincular ao Setor / Ambiente</Text>
+            <View style={styles.pickerContainer}>
+              {loadingAmbientes ? (
+                <ActivityIndicator size="small" color="#4F46E5" style={{ padding: 14 }} />
               ) : (
-                <>
-                  <Ionicons name="trash-outline" size={18} color="#EF4444" style={{ marginRight: 6 }} />
-                  <Text style={styles.btnExcluirText}>Excluir Dispositivo</Text>
-                </>
+                <Picker
+                  selectedValue={ambienteId}
+                  onValueChange={(itemValue) => setAmbienteId(itemValue)}
+                  style={styles.picker}
+                >
+                  <Picker.Item label="⚠️ Deixar sem vínculo (Em Estoque)" value="" />
+                  {ambientes.map((amb) => (
+                    <Picker.Item key={amb.id} label={amb.nome} value={amb.id} />
+                  ))}
+                </Picker>
+              )}
+            </View>
+
+            {/* BOTÃO PRINCIPAL */}
+            <TouchableOpacity 
+              style={[styles.btnSalvar, loadingSubmit && styles.btnDisabled]} 
+              onPress={handleSalvar}
+              disabled={loadingSubmit}
+              activeOpacity={0.8}
+            >
+              {loadingSubmit ? (
+                <ActivityIndicator color="#FFF" />
+              ) : (
+                <Text style={styles.btnSalvarText}>{isEditing ? 'Atualizar Vínculo' : 'Registrar Dispositivo'}</Text>
               )}
             </TouchableOpacity>
-          )}
-        </View>
-      </ScrollView>
 
-      {/* MODAL DIALOG CUSTOMIZADO (ALERT E CONFIRM PREMIUM) */}
-      <Modal
-        transparent
-        visible={!!modalConfig}
-        animationType="fade"
-        onRequestClose={() => setModalConfig(null)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
-            <View style={[
-              styles.modalIconBg, 
-              modalConfig?.type === 'success' ? styles.iconBgSuccess : 
-              modalConfig?.type === 'confirm' ? styles.iconBgDanger : 
-              styles.iconBgWarning
-            ]}>
-              <Ionicons 
-                name={
-                  modalConfig?.type === 'success' ? 'checkmark-circle-outline' : 
-                  modalConfig?.type === 'confirm' ? 'trash-outline' : 
-                  'warning-outline'
-                } 
-                size={28} 
-                color={
-                  modalConfig?.type === 'success' ? '#10B981' : 
-                  modalConfig?.type === 'confirm' ? '#EF4444' : 
-                  '#F59E0B'
-                } 
-              />
-            </View>
-            
-            <Text style={styles.modalTitle}>{modalConfig?.title}</Text>
-            <Text style={styles.modalMessage}>{modalConfig?.message}</Text>
-            
-            <View style={styles.modalButtonsRow}>
-              {modalConfig?.type === 'confirm' && (
-                <TouchableOpacity 
-                  style={[styles.modalButton, styles.modalButtonCancel]} 
-                  onPress={() => setModalConfig(null)}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.modalButtonTextCancel}>Cancelar</Text>
-                </TouchableOpacity>
-              )}
-              
+            {/* BOTÃO DELETAR */}
+            {isEditing && (
               <TouchableOpacity 
-                style={[
-                  styles.modalButton, 
-                  modalConfig?.type === 'confirm' ? styles.modalButtonConfirmDelete : styles.modalButtonConfirm
-                ]} 
-                onPress={() => {
-                  const action = modalConfig?.onConfirm;
-                  setModalConfig(null);
-                  if (action) action();
-                }}
-                activeOpacity={0.8}
+                style={styles.btnExcluir} 
+                onPress={handleDeletar}
+                disabled={deleting}
+                activeOpacity={0.7}
               >
-                <Text style={styles.modalButtonTextConfirm}>
-                  {modalConfig?.type === 'confirm' ? 'Confirmar' : 'OK'}
-                </Text>
+                {deleting ? (
+                  <ActivityIndicator color="#EF4444" />
+                ) : (
+                  <>
+                    <Ionicons name="trash-outline" size={18} color="#EF4444" style={{ marginRight: 6 }} />
+                    <Text style={styles.btnExcluirText}>Excluir Dispositivo</Text>
+                  </>
+                )}
               </TouchableOpacity>
+            )}
+          </View>
+        </ScrollView>
+
+        {/* MODAL DIALOG CUSTOMIZADO (ALERT E CONFIRM PREMIUM) */}
+        <Modal
+          transparent
+          visible={!!modalConfig}
+          animationType="fade"
+          onRequestClose={() => setModalConfig(null)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalCard}>
+              <View style={[
+                styles.modalIconBg, 
+                modalConfig?.type === 'success' ? styles.iconBgSuccess : 
+                modalConfig?.type === 'confirm' ? styles.iconBgDanger : 
+                styles.iconBgWarning
+              ]}>
+                <Ionicons 
+                  name={
+                    modalConfig?.type === 'success' ? 'checkmark-circle-outline' : 
+                    modalConfig?.type === 'confirm' ? 'trash-outline' : 
+                    'warning-outline'
+                  } 
+                  size={28} 
+                  color={
+                    modalConfig?.type === 'success' ? '#10B981' : 
+                    modalConfig?.type === 'confirm' ? '#EF4444' : 
+                    '#F59E0B'
+                  } 
+                />
+              </View>
+              
+              <Text style={styles.modalTitle}>{modalConfig?.title}</Text>
+              <Text style={styles.modalMessage}>{modalConfig?.message}</Text>
+              
+              <View style={styles.modalButtonsRow}>
+                {modalConfig?.type === 'confirm' && (
+                  <TouchableOpacity 
+                    style={[styles.modalButton, styles.modalButtonCancel]} 
+                    onPress={() => setModalConfig(null)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.modalButtonTextCancel}>Cancelar</Text>
+                  </TouchableOpacity>
+                )}
+                
+                <TouchableOpacity 
+                  style={[
+                    styles.modalButton, 
+                    modalConfig?.type === 'confirm' ? styles.modalButtonConfirmDelete : styles.modalButtonConfirm
+                  ]} 
+                  onPress={() => {
+                    const action = modalConfig?.onConfirm;
+                    setModalConfig(null);
+                    if (action) action();
+                  }}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.modalButtonTextConfirm}>
+                    {modalConfig?.type === 'confirm' ? 'Confirmar' : 'OK'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
-        </View>
-      </Modal>
-    </View>
+        </Modal>
+      </View>
+    </KeyboardAvoidingView>
   );
 }
 
