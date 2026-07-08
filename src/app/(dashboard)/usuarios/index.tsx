@@ -18,8 +18,6 @@ import {
 export default function PerfilUsuarioScreen() {
   const { userId, setUserId } = useAuth();
   
-  console.log('🔄 Renderizando PerfilUsuarioScreen | userId atual:', userId);
-
   const [nome, setNome] = useState('');
   const [email, setEmail] = useState('');
   const [receberEmail, setReceberEmail] = useState(false);
@@ -38,20 +36,16 @@ export default function PerfilUsuarioScreen() {
   } | null>(null);
 
   const fetchUsuario = async () => {
-    console.log('🚀 Iniciando fetchUsuario com userId:', userId);
 
     if (!userId || userId === 'undefined' || userId === 'null') {
-      console.log('⚠️ fetchUsuario abortado: userId inválido');
       return;
     }
     
     try {
       setLoadingData(true);
-      console.log(`🌐 Disparando requisição: GET /usuario/${userId}`);
       
       const response = await api.get(`/usuario/${userId}`);
-      console.log('✅ Resposta da API recebida:', response.data);
-      
+
       if (response.data) {
         setNome(response.data.nome || '');
         setEmail(response.data.email || '');
@@ -69,16 +63,12 @@ export default function PerfilUsuarioScreen() {
       });
     } finally {
       setLoadingData(false); 
-      console.log('🏁 Finalizou o loading.');
     }
   };
 
   useEffect(() => {
     if (userId && userId !== 'undefined' && userId !== 'null') {
-      console.log('⚡ userId detectado, disparando fetch...');
       fetchUsuario();
-    } else {
-      console.log('⏳ userId ainda indefinido, aguardando...');
     }
   }, [userId]);
 
