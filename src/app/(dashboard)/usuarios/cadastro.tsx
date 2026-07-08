@@ -4,7 +4,9 @@ import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
   ActivityIndicator,
+  KeyboardAvoidingView,
   Modal,
+  Platform,
   ScrollView,
   StyleSheet,
   Switch,
@@ -70,146 +72,155 @@ export default function CadastroUsuarioScreen() {
   };
 
   return (
-    <View style={{ flex: 1 }}>
-      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Novo Operador</Text>
-          <Text style={styles.subtitle}>Cadastre um novo usuário com acesso ao sistema.</Text>
-        </View>
-
-        {/* CARD DO FORMULÁRIO */}
-        <View style={styles.formCard}>
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>Nome Completo</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Digite seu nome"
-              placeholderTextColor="#94A3B8"
-              value={nome}
-              onChangeText={setNome}
-            />
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+      <View style={{ flex: 1 }}>
+        <ScrollView 
+          style={styles.container} 
+          contentContainerStyle={styles.content}
+          keyboardShouldPersistTaps='handled'
+        >
+          <View style={styles.header}>
+            <Text style={styles.title}>Novo Operador</Text>
+            <Text style={styles.subtitle}>Cadastre um novo usuário com acesso ao sistema.</Text>
           </View>
 
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>E-mail</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Digite seu e-mail"
-              placeholderTextColor="#94A3B8"
-              keyboardType="email-address"
-              autoCapitalize="none"
-              value={email}
-              onChangeText={setEmail}
-            />
-          </View>
-
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>Senha</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Crie uma senha"
-              placeholderTextColor="#94A3B8"
-              secureTextEntry
-              value={senha}
-              onChangeText={setSenha}
-            />
-          </View>
-
-          <View style={styles.switchContainer}>
-            <View style={{ flex: 1, paddingRight: 10 }}>
-              <Text style={styles.switchLabel}>Receber alertas por e-mail</Text>
-              <Text style={styles.switchDescription}>
-                Notificaremos sobre desvios críticos e status no armazém.
-              </Text>
-            </View>
-            <Switch
-              value={receberEmail}
-              onValueChange={setReceberEmail}
-              trackColor={{ false: '#E2E8F0', true: '#C7D2FE' }}
-              thumbColor={receberEmail ? '#4F46E5' : '#F1F5F9'}
-            />
-          </View>
-
-          <TouchableOpacity 
-            style={[styles.btnPrincipal, loading && styles.btnDisabled]} 
-            onPress={handleCadastro}
-            disabled={loading}
-            activeOpacity={0.8}
-          >
-            {loading ? (
-              <ActivityIndicator color="#FFF" />
-            ) : (
-              <Text style={styles.btnText}>Salvar Cadastro</Text>
-            )}
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
-
-      {/* MODAL DIALOG CUSTOMIZADO (ALERT E CONFIRM PREMIUM) */}
-      <Modal
-        transparent
-        visible={!!modalConfig}
-        animationType="fade"
-        onRequestClose={() => setModalConfig(null)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
-            <View style={[
-              styles.modalIconBg, 
-              modalConfig?.type === 'success' ? styles.iconBgSuccess : 
-              modalConfig?.type === 'confirm' ? styles.iconBgDanger : 
-              styles.iconBgWarning
-            ]}>
-              <Ionicons 
-                name={
-                  modalConfig?.type === 'success' ? 'checkmark-circle-outline' : 
-                  modalConfig?.type === 'confirm' ? 'trash-outline' : 
-                  'warning-outline'
-                } 
-                size={28} 
-                color={
-                  modalConfig?.type === 'success' ? '#10B981' : 
-                  modalConfig?.type === 'confirm' ? '#EF4444' : 
-                  '#F59E0B'
-                } 
+          {/* CARD DO FORMULÁRIO */}
+          <View style={styles.formCard}>
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>Nome Completo</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Digite seu nome"
+                placeholderTextColor="#94A3B8"
+                value={nome}
+                onChangeText={setNome}
               />
             </View>
-            
-            <Text style={styles.modalTitle}>{modalConfig?.title}</Text>
-            <Text style={styles.modalMessage}>{modalConfig?.message}</Text>
-            
-            <View style={styles.modalButtonsRow}>
-              {modalConfig?.type === 'confirm' && (
-                <TouchableOpacity 
-                  style={[styles.modalButton, styles.modalButtonCancel]} 
-                  onPress={() => setModalConfig(null)}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.modalButtonTextCancel}>Cancelar</Text>
-                </TouchableOpacity>
-              )}
-              
-              <TouchableOpacity 
-                style={[
-                  styles.modalButton, 
-                  modalConfig?.type === 'confirm' ? styles.modalButtonConfirmDelete : styles.modalButtonConfirm
-                ]} 
-                onPress={() => {
-                  const action = modalConfig?.onConfirm;
-                  setModalConfig(null);
-                  if (action) action();
-                }}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.modalButtonTextConfirm}>
-                  {modalConfig?.type === 'confirm' ? 'Confirmar' : 'OK'}
+
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>E-mail</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Digite seu e-mail"
+                placeholderTextColor="#94A3B8"
+                keyboardType="email-address"
+                autoCapitalize="none"
+                value={email}
+                onChangeText={setEmail}
+              />
+            </View>
+
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>Senha</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Crie uma senha"
+                placeholderTextColor="#94A3B8"
+                secureTextEntry
+                value={senha}
+                onChangeText={setSenha}
+              />
+            </View>
+
+            <View style={styles.switchContainer}>
+              <View style={{ flex: 1, paddingRight: 10 }}>
+                <Text style={styles.switchLabel}>Receber alertas por e-mail</Text>
+                <Text style={styles.switchDescription}>
+                  Notificaremos sobre desvios críticos e status no armazém.
                 </Text>
-              </TouchableOpacity>
+              </View>
+              <Switch
+                value={receberEmail}
+                onValueChange={setReceberEmail}
+                trackColor={{ false: '#E2E8F0', true: '#C7D2FE' }}
+                thumbColor={receberEmail ? '#4F46E5' : '#F1F5F9'}
+              />
+            </View>
+
+            <TouchableOpacity 
+              style={[styles.btnPrincipal, loading && styles.btnDisabled]} 
+              onPress={handleCadastro}
+              disabled={loading}
+              activeOpacity={0.8}
+            >
+              {loading ? (
+                <ActivityIndicator color="#FFF" />
+              ) : (
+                <Text style={styles.btnText}>Salvar Cadastro</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+
+        {/* MODAL DIALOG CUSTOMIZADO (ALERT E CONFIRM PREMIUM) */}
+        <Modal
+          transparent
+          visible={!!modalConfig}
+          animationType="fade"
+          onRequestClose={() => setModalConfig(null)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalCard}>
+              <View style={[
+                styles.modalIconBg, 
+                modalConfig?.type === 'success' ? styles.iconBgSuccess : 
+                modalConfig?.type === 'confirm' ? styles.iconBgDanger : 
+                styles.iconBgWarning
+              ]}>
+                <Ionicons 
+                  name={
+                    modalConfig?.type === 'success' ? 'checkmark-circle-outline' : 
+                    modalConfig?.type === 'confirm' ? 'trash-outline' : 
+                    'warning-outline'
+                  } 
+                  size={28} 
+                  color={
+                    modalConfig?.type === 'success' ? '#10B981' : 
+                    modalConfig?.type === 'confirm' ? '#EF4444' : 
+                    '#F59E0B'
+                  } 
+                />
+              </View>
+              
+              <Text style={styles.modalTitle}>{modalConfig?.title}</Text>
+              <Text style={styles.modalMessage}>{modalConfig?.message}</Text>
+              
+              <View style={styles.modalButtonsRow}>
+                {modalConfig?.type === 'confirm' && (
+                  <TouchableOpacity 
+                    style={[styles.modalButton, styles.modalButtonCancel]} 
+                    onPress={() => setModalConfig(null)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.modalButtonTextCancel}>Cancelar</Text>
+                  </TouchableOpacity>
+                )}
+                
+                <TouchableOpacity 
+                  style={[
+                    styles.modalButton, 
+                    modalConfig?.type === 'confirm' ? styles.modalButtonConfirmDelete : styles.modalButtonConfirm
+                  ]} 
+                  onPress={() => {
+                    const action = modalConfig?.onConfirm;
+                    setModalConfig(null);
+                    if (action) action();
+                  }}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.modalButtonTextConfirm}>
+                    {modalConfig?.type === 'confirm' ? 'Confirmar' : 'OK'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
-        </View>
-      </Modal>
-    </View>
+        </Modal>
+      </View>
+    </KeyboardAvoidingView>
   );
 }
 
