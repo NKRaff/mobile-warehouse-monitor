@@ -86,6 +86,13 @@ export default function NotificacoesScreen() {
     try {
       setNotificacoes(prev => prev.filter(n => n.id !== notificacaoId));
       await api.post('/notificacao/', { notificacaoId });
+      
+      setModalConfig({
+        title: 'Alerta Resolvido',
+        message: 'A anomalia foi marcada como resolvida com sucesso!',
+        type: 'success',
+        onConfirm: () => {}
+      });
     } catch (error) {
       setModalConfig({
         title: 'Erro',
