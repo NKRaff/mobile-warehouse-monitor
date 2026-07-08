@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import {
   ActivityIndicator,
@@ -11,7 +12,6 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 
 // IMPORT DO EXPO ROUTER
 import { useAuth } from '@/src/contexts/AuthContext';
@@ -79,10 +79,9 @@ export default function LoginScreen() {
   };
 
   return (
-    <View style={{ flex: 1 }}>
       <KeyboardAvoidingView 
         style={{ flex: 1 }} 
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <ScrollView 
           contentContainerStyle={styles.scrollContent} 
@@ -134,7 +133,7 @@ export default function LoginScreen() {
             </View>
           </View>
         </ScrollView>
-      </KeyboardAvoidingView>
+      
 
       {/* MODAL DIALOG CUSTOMIZADO (ALERT E CONFIRM PREMIUM) */}
       <Modal
@@ -200,7 +199,8 @@ export default function LoginScreen() {
           </View>
         </View>
       </Modal>
-    </View>
+
+      </KeyboardAvoidingView>
   );
 }
 
